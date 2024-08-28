@@ -1,0 +1,12 @@
+# Testing
+coverage/
+
+# Build
+dist/
+
+# Packages
+package-lock.json
+
+# JavaScript & TypeScript
+*.js
+*.ts
