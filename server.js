@@ -39,17 +39,40 @@ app.use('*', async (req, res) => {
   try {
     const url = req.originalUrl.replace(base, '')
 
+    const relativePath = 'View'
+    const params = {}
+
     let template
     let render
 
     if (!isProduction) {
       // Always read fresh template in development
-      template = await fs.readFile('./index.html', 'utf-8')
+      template = await fs.readFile('./src/ui/index.html', 'utf-8')
+      template = template.replace('<!--app-js-->', `
+        <script type="module" src="/views/View.tsx"></script>
+        <!--app-js-->
+      `)
       template = await vite.transformIndexHtml(url, template)
-      render = (await vite.ssrLoadModule('/src/ui/entry-server.tsx')).render
+      template = template.replace('<!--app-js-->', `
+        <script type="module">
+          import load from '/loader.ts';
+          import view from '/views/${relativePath}.tsx';
+
+          const params = ${JSON.stringify(params)};
+          load(view, params);
+        </script>
+      `)
+      render = (await vite.ssrLoadModule('/entry-server.tsx')).render
     } else {
-      template = templateHtml
-      render = (await import('./dist/server/entry-server.js')).render
+      template = templateHtml.replace('<!--app-js-->', `
+        <script type="module">
+          import '/views/${relativePath}.js';
+
+          const params = ${JSON.stringify(params)}
+          globalThis.loadView(globalThis.View, params);
+        </script>
+      `)
+      render = (await import('./dist/server/views/entry-server.js')).render
     }
 
     const rendered = await render(url, ssrManifest)
