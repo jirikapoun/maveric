@@ -1,21 +1,14 @@
-// import React from 'react'
 import ReactDOM from 'react-dom/client'
 
-export const load = view => {
-  ReactDOM.hydrateRoot(
-    document.getElementById('root')!,
-    view,
-  )
+export const loadView: typeof globalThis['loadView'] = view => {
+  const root = document.getElementById('root')
+
+  if (!root) {
+    throw new Error('Root element not found')
+  }
+
+  ReactDOM.hydrateRoot(root, view)
 }
+export default loadView
 
-export default load
-
-globalThis.loadView = load
-
-// export default function load(view, params) {
-//   const element = React.createElement(view, params)
-//   ReactDOM.hydrateRoot(
-//     document.getElementById('root')!,
-//     element,
-//   )
-// }
+globalThis.loadView = loadView

@@ -26,4 +26,4 @@ run: all
 
 
 dist/server/views/%.js: src/ui/views/%.tsx
-	${npx} vite build --ssr views/$*.tsx --outDir ../../dist/server --emptyOutDir
+	${npx} vite build --ssr views/$*.tsx --outDir ../../dist/server --emptyOutDir false

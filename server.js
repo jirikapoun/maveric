@@ -2,11 +2,11 @@ import fs from 'node:fs/promises'
 import express from 'express'
 import ReactDOMServer from 'react-dom/server'
 
-const createRender = (app) => ({
+const createRender = app => ({
   render: () => {
     const html = ReactDOMServer.renderToString(app)
     return { html }
-  }
+  },
 })
 
 // Constants
@@ -47,7 +47,7 @@ app.use('*', async (req, res) => {
   try {
     const url = req.originalUrl.replace(base, '')
 
-    const relativePath = 'View'
+    const relativePath = url || 'View'
     const params = {}
 
     let template
@@ -57,20 +57,20 @@ app.use('*', async (req, res) => {
       // Always read fresh template in development
       template = await fs.readFile('./src/ui/index.html', 'utf-8')
       template = template.replace('<!--app-js-->', `
-        <script type="module" src="/views/View.tsx"></script>
+        <script type="module" src="/views/${relativePath}.tsx"></script>
         <!--app-js-->
       `)
       template = await vite.transformIndexHtml(url, template)
       template = template.replace('<!--app-js-->', `
         <script type="module">
-          import load from '/loader.ts';
+          import loadView from '/loader.ts';
           import view from '/views/${relativePath}.tsx';
 
           const params = ${JSON.stringify(params)};
-          load(view, params);
+          loadView(view, params);
         </script>
       `)
-      const view = await vite.ssrLoadModule('/views/View.tsx')
+      const view = await vite.ssrLoadModule(`/views/${relativePath}.tsx`)
       render = createRender(view.View).render
     } else {
       template = templateHtml.replace('<!--app-js-->', `
@@ -81,7 +81,7 @@ app.use('*', async (req, res) => {
           globalThis.loadView(globalThis.View, params);
         </script>
       `)
-      const { View } = await import('./dist/server/views/View.js')
+      const { View } = await import(`./dist/server/views/${relativePath}.js`)
       render = createRender(View).render
     }
 
