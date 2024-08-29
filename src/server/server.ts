@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises'
 import express from 'express'
 import ReactDOMServer from 'react-dom/server'
+import { type ViteDevServer } from 'vite'
 
 // Constants
 const isProduction = process.env.NODE_ENV === 'production'
@@ -11,15 +12,17 @@ const base = process.env.BASE || '/'
 const templateHtml = isProduction
   ? await fs.readFile('./dist/client/index.html', 'utf-8')
   : ''
-const ssrManifest = isProduction
-  ? await fs.readFile('./dist/client/.vite/ssr-manifest.json', 'utf-8')
-  : undefined
+
+// TODO use manifest according to https://vitejs.dev/guide/ssr#generating-preload-directives
+// const ssrManifest = isProduction
+//   ? await fs.readFile('./dist/client/.vite/ssr-manifest.json', 'utf-8')
+//   : undefined
 
 // Create http server
 const app = express()
 
 // Add Vite or respective production middlewares
-let vite
+let vite: ViteDevServer
 
 if (!isProduction) {
   const { createServer } = await import('vite')
@@ -74,7 +77,7 @@ app.use('*', async (req, res) => {
           globalThis.loadView(globalThis.View, params);
         </script>
       `)
-      const { View } = await import(`./dist/server/views/${relativePath}.js`)
+      const { View } = await import(`./views/${relativePath}.js`)
       view = View
     }
 
@@ -85,8 +88,8 @@ app.use('*', async (req, res) => {
       .replace('<!--app-html-->', rendered)
 
     res.status(200).set({ 'Content-Type': 'text/html' }).send(html)
-  } catch (e) {
-    vite?.ssrFixStacktrace(e)
+  } catch (e: any) {
+    vite.ssrFixStacktrace(e)
     console.log(e.stack)
     res.status(500).end(e.stack)
   }
