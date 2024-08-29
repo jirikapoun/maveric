@@ -2,6 +2,9 @@ npx = npx --no-install
 
 all: client server
 
+clean:
+	${npx} rimraf dist
+
 client:
 	${npx} vite build --ssrManifest --outDir ../../dist/client --emptyOutDir
 
