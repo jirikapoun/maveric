@@ -2,13 +2,6 @@ import fs from 'node:fs/promises'
 import express from 'express'
 import ReactDOMServer from 'react-dom/server'
 
-const createRender = app => ({
-  render: () => {
-    const html = ReactDOMServer.renderToString(app)
-    return { html }
-  },
-})
-
 // Constants
 const isProduction = process.env.NODE_ENV === 'production'
 const port = process.env.PORT || 5173
@@ -51,7 +44,7 @@ app.use('*', async (req, res) => {
     const params = {}
 
     let template
-    let render
+    let view
 
     if (!isProduction) {
       // Always read fresh template in development
@@ -70,8 +63,8 @@ app.use('*', async (req, res) => {
           loadView(view, params);
         </script>
       `)
-      const view = await vite.ssrLoadModule(`/views/${relativePath}.tsx`)
-      render = createRender(view.View).render
+      const { View } = await vite.ssrLoadModule(`/views/${relativePath}.tsx`)
+      view = View
     } else {
       template = templateHtml.replace('<!--app-js-->', `
         <script type="module">
@@ -82,14 +75,14 @@ app.use('*', async (req, res) => {
         </script>
       `)
       const { View } = await import(`./dist/server/views/${relativePath}.js`)
-      render = createRender(View).render
+      view = View
     }
 
-    const rendered = await render(url, ssrManifest)
+    const rendered = await ReactDOMServer.renderToString(view)
 
     const html = template
-      .replace('<!--app-head-->', rendered.head ?? '')
-      .replace('<!--app-html-->', rendered.html ?? '')
+      .replace('<!--app-head-->', '')
+      .replace('<!--app-html-->', rendered)
 
     res.status(200).set({ 'Content-Type': 'text/html' }).send(html)
   } catch (e) {
