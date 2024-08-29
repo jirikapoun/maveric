@@ -28,4 +28,4 @@ dist/server/views/%.js: src/ui/views/%.tsx
 	${npx} vite build --ssr views/$*.tsx --outDir ../../dist/server --emptyOutDir false
 
 dist/server/server.js: src/server/server.ts
-	tsc --project tsconfig.server.json --outDir dist/server
+	tsc --project src/server/tsconfig.json --outDir dist/server

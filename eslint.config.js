@@ -41,7 +41,7 @@ const config = [
       ecmaVersion: 2020,
       globals: globals.browser,
       parserOptions: {
-        project: ['./tsconfig.json', './tsconfig.node.json'],
+        project: ['./tsconfig.json', './src/server/tsconfig.json', './src/ui/tsconfig.json'],
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -96,6 +96,7 @@ const config = [
         ignoreTemplateLiterals: true,
         ignoreRegExpLiterals: true,
       }],
+      '@stylistic/padding-line-between-statements': 'off',
     },
   },
 ]
