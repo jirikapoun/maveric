@@ -1,5 +1,13 @@
 import fs from 'node:fs/promises'
 import express from 'express'
+import ReactDOMServer from 'react-dom/server'
+
+const createRender = (app) => ({
+  render: () => {
+    const html = ReactDOMServer.renderToString(app)
+    return { html }
+  }
+})
 
 // Constants
 const isProduction = process.env.NODE_ENV === 'production'
@@ -62,7 +70,8 @@ app.use('*', async (req, res) => {
           load(view, params);
         </script>
       `)
-      render = (await vite.ssrLoadModule('/entry-server.tsx')).render
+      const view = await vite.ssrLoadModule('/views/View.tsx')
+      render = createRender(view.View).render
     } else {
       template = templateHtml.replace('<!--app-js-->', `
         <script type="module">
@@ -72,7 +81,8 @@ app.use('*', async (req, res) => {
           globalThis.loadView(globalThis.View, params);
         </script>
       `)
-      render = (await import('./dist/server/views/entry-server.js')).render
+      const { View } = await import('./dist/server/views/View.js')
+      render = createRender(View).render
     }
 
     const rendered = await render(url, ssrManifest)

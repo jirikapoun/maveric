@@ -1,12 +1,12 @@
 npx = npx --no-install
 
-build: build-client build-server
+all: client server
 
-build-client:
-	${npx} vite build --ssrManifest --outDir ../../dist/client
+client:
+	${npx} vite build --ssrManifest --outDir ../../dist/client --emptyOutDir
 
-build-server:
-	${npx} vite build --ssr entry-server.tsx --outDir ../../dist/server
+server: $(patsubst src/ui/views/%.tsx,dist/server/views/%.js,$(wildcard src/ui/views/*.tsx))
+	${npx} tsc
 
 lint:
 	${npx} eslint .
@@ -18,5 +18,9 @@ lint-staged:
 dev:
 	node server
 
-run: build
+run: all
 	NODE_ENV=production node server
+
+
+dist/server/views/%.js: src/ui/views/%.tsx
+	${npx} vite build --ssr views/$*.tsx --outDir ../../dist/server --emptyOutDir
