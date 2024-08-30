@@ -1,17 +1,9 @@
-import fs from 'node:fs/promises'
 import express from 'express'
-import ReactDOMServer from 'react-dom/server'
-import { type ViteDevServer } from 'vite'
+import { type Middleware } from './middleware/base'
 
 // Constants
 const isProduction = process.env.NODE_ENV === 'production'
 const port = process.env.PORT || 5173
-const base = process.env.BASE || '/'
-
-// Cached production assets
-const templateHtml = isProduction
-  ? await fs.readFile('./dist/client/index.html', 'utf-8')
-  : ''
 
 // TODO use manifest according to https://vitejs.dev/guide/ssr#generating-preload-directives
 // const ssrManifest = isProduction
@@ -21,79 +13,10 @@ const templateHtml = isProduction
 // Create http server
 const app = express()
 
-// Add Vite or respective production middlewares
-let vite: ViteDevServer
-
-if (!isProduction) {
-  const { createServer } = await import('vite')
-  vite = await createServer({
-    server: { middlewareMode: true },
-    appType: 'custom',
-    base,
-  })
-  app.use(vite.middlewares)
-} else {
-  const sirv = (await import('sirv')).default
-  app.use(base, sirv('./dist/client', { extensions: [] }))
-  app.use(base, sirv('./public', { extensions: [] }))
-}
-
-// Serve HTML
-app.use('*', async (req, res) => {
-  try {
-    const url = req.originalUrl.replace(base, '')
-
-    const relativePath = url || 'View'
-    const params = {}
-
-    let template
-    let view
-
-    if (!isProduction) {
-      // Always read fresh template in development
-      template = await fs.readFile('./src/ui/index.html', 'utf-8')
-      template = template.replace('<!--app-js-->', `
-        <script type="module" src="/views/${relativePath}.tsx"></script>
-        <!--app-js-->
-      `)
-      template = await vite.transformIndexHtml(url, template)
-      template = template.replace('<!--app-js-->', `
-        <script type="module">
-          import loadView from '/loader.ts';
-          import view from '/views/${relativePath}.tsx';
-
-          const params = ${JSON.stringify(params)};
-          loadView(view, params);
-        </script>
-      `)
-      const { View } = await vite.ssrLoadModule(`/views/${relativePath}.tsx`)
-      view = View
-    } else {
-      template = templateHtml.replace('<!--app-js-->', `
-        <script type="module">
-          import '/views/${relativePath}.js';
-
-          const params = ${JSON.stringify(params)}
-          globalThis.loadView(globalThis.View, params);
-        </script>
-      `)
-      const { View } = await import(`./views/${relativePath}.js`)
-      view = View
-    }
-
-    const rendered = await ReactDOMServer.renderToString(view)
-
-    const html = template
-      .replace('<!--app-head-->', '')
-      .replace('<!--app-html-->', rendered)
-
-    res.status(200).set({ 'Content-Type': 'text/html' }).send(html)
-  } catch (e: any) {
-    vite.ssrFixStacktrace(e)
-    console.log(e.stack)
-    res.status(500).end(e.stack)
-  }
-})
+// Environment-specific functionality
+const env = isProduction ? 'prod' : 'dev'
+const envMiddleware = await import(`./middleware/${env}.middleware.js`) as { default: Middleware }
+app.use(envMiddleware.default)
 
 // Start http server
 app.listen(port, () => {
