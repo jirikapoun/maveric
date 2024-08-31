@@ -1,7 +1,7 @@
 import express from 'express'
-import { createHTTPHandler } from '@trpc/server/adapters/standalone'
 import { appController } from './controllers/index.js'
 import { type Middleware } from './middleware'
+import { createTRPCMiddleware } from './middleware/trpc.middleware.js'
 
 export const createApp = (uiMiddleware: Middleware) => {
   const app = express()
@@ -13,9 +13,7 @@ export const createApp = (uiMiddleware: Middleware) => {
     next()
   })
 
-  app.use('/trpc', createHTTPHandler({
-    router: appController,
-  }))
+  app.use('/trpc', createTRPCMiddleware(appController))
 
   return app
 }
