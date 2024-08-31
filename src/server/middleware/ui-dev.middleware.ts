@@ -1,17 +1,11 @@
 import { readFile } from 'node:fs/promises'
 import { renderToString } from 'react-dom/server'
-import { createServer } from 'vite'
+import { type ViteDevServer } from 'vite'
 import { type Middleware } from './base'
 
 const base = process.env.BASE || '/'
 
-const vite = await createServer({
-  server: { middlewareMode: true },
-  appType: 'custom',
-  // base,
-})
-
-const ssrDevMiddleware: Middleware = async (req, res, _next) => {
+export const uiDevMiddleware = (vite: ViteDevServer): Middleware => async (req, res) => {
   try {
     const url = req.originalUrl.replace(base, '')
 
@@ -19,11 +13,7 @@ const ssrDevMiddleware: Middleware = async (req, res, _next) => {
     const params = {}
 
     // Always read fresh template in development
-    let template = await readFile('./src/ui/index.html', 'utf-8')
-    template = template.replace('<!--app-js-->', `
-        <script type="module" src="/views/${relativePath}.tsx"></script>
-        <!--app-js-->
-      `)
+    let template = await readFile('../ui/index.html', 'utf-8')
     template = await vite.transformIndexHtml(url, template)
     template = template.replace('<!--app-js-->', `
         <script type="module">
@@ -43,6 +33,7 @@ const ssrDevMiddleware: Middleware = async (req, res, _next) => {
       .replace('<!--app-html-->', rendered)
 
     res.status(200).set({ 'Content-Type': 'text/html' }).send(html)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (e: any) {
     vite.ssrFixStacktrace(e)
     console.log(e.stack)
@@ -50,10 +41,4 @@ const ssrDevMiddleware: Middleware = async (req, res, _next) => {
   }
 }
 
-export const devMiddleware: Middleware = (req, res, next) => {
-  vite.middlewares(req, res, () => {
-    ssrDevMiddleware(req, res, next)
-  })
-}
-
-export default devMiddleware
+export default uiDevMiddleware

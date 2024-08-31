@@ -5,13 +5,18 @@ import { type Middleware } from './base'
 
 const base = process.env.BASE || '/'
 
-const serveBundle = sirv('./dist/client', { extensions: [] })
+const templateHtml = await fs.readFile('../client/index.html', 'utf-8')
 
-const servePublic = sirv('./public', { extensions: [] })
+// TODO use manifest according to https://vitejs.dev/guide/ssr#generating-preload-directives
+// const ssrManifest = isProduction
+//   ? await fs.readFile('./dist/client/.vite/ssr-manifest.json', 'utf-8')
+//   : undefined
 
-const templateHtml = await fs.readFile('./dist/client/index.html', 'utf-8')
+const serveSource = sirv('../../dist/client', { extensions: [] })
 
-const ssrProdMiddleware: Middleware = async (req, res) => {
+const serveAssets = sirv('../../public', { extensions: [] })
+
+const ssrMiddleware: Middleware = async (req, res) => {
   const url = req.originalUrl.replace(base, '')
 
   const relativePath = url || 'View'
@@ -36,12 +41,12 @@ const ssrProdMiddleware: Middleware = async (req, res) => {
   res.status(200).set({ 'Content-Type': 'text/html' }).send(html)
 }
 
-export const prodMiddleware: Middleware = (req, res, next) => {
-  serveBundle(req, res, () => {
-    servePublic(req, res, () => {
-      ssrProdMiddleware(req, res, next)
+export const uiMiddleware: Middleware = (req, res, next) => {
+  serveSource(req, res, () => {
+    serveAssets(req, res, () => {
+      void ssrMiddleware(req, res, next)
     })
   })
 }
 
-export default prodMiddleware
+export default uiMiddleware

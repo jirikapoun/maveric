@@ -6,26 +6,18 @@ clean:
 	${npx} rimraf dist
 
 client:
-	${npx} vite build --ssrManifest --outDir ../../dist/client --emptyOutDir
+	cd src/ui && ${npx} vite build
 
-server: dist/server/server.js $(patsubst src/ui/views/%.tsx,dist/server/views/%.js,$(wildcard src/ui/views/*.tsx))
+server:
+	cd src/server && ${npx} vite build
+	cd src/server && ${npx} tsc --outDir ../../dist/server
 
 lint:
 	${npx} eslint .
 	${npx} prettier --check .
 
-lint-staged:
-	${npx} lint-staged
-
-dev: server
-	node .
+dev:
+	cd src/server && node ./server-dev.js
 
 run: all
-	NODE_ENV=production node .
-
-
-dist/server/views/%.js: src/ui/views/%.tsx
-	${npx} vite build --ssr views/$*.tsx --outDir ../../dist/server --emptyOutDir false
-
-dist/server/server.js: src/server/server.ts
-	tsc --project src/server/tsconfig.json --outDir dist/server
+	cd dist/server && node ./server.js

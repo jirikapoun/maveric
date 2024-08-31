@@ -6,5 +6,6 @@
   },
   "buildOptions": {
     "outDir": "../../dist/server"
-  }
+  },
+  "exclude": ["./vite.config.ts", "./middleware/ui-dev.middleware.ts"]
 }

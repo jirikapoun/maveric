@@ -4,12 +4,15 @@ import react from '@vitejs/plugin-react'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  root: 'src/ui',
+  root: '.',
   publicDir: '../../public',
+  appType: 'custom',
   build: {
-    copyPublicDir: false,
+    outDir: '../../dist/client',
+    emptyOutDir: true,
+    ssrManifest: true,
     rollupOptions: {
-      input: ['src/ui/index.html', 'src/ui/loader.ts', ...await glob('src/ui/views/**/*.tsx')],
+      input: ['index.html', 'loader.ts', ...await glob('views/**/*.tsx')],
       output: {
         entryFileNames: 'views/[name].js',
       },
