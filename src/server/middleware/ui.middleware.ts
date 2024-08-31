@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises'
 import sirv from 'sirv'
 import { renderToString } from 'react-dom/server'
-import { type Middleware } from './base'
+import { type Middleware } from './index'
 
 const base = process.env.BASE || '/'
 
@@ -16,8 +16,11 @@ const serveSource = sirv('../../dist/client', { extensions: [] })
 
 const serveAssets = sirv('../../public', { extensions: [] })
 
-const ssrMiddleware: Middleware = async (req, res) => {
+const ssrMiddleware: Middleware = async (req, res, next) => {
   const url = req.originalUrl.replace(base, '')
+  if (url.startsWith('trpc/')) {
+    return next()
+  }
 
   const relativePath = url || 'View'
   const params = {}

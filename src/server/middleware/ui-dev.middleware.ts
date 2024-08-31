@@ -1,13 +1,16 @@
 import { readFile } from 'node:fs/promises'
 import { renderToString } from 'react-dom/server'
 import { type ViteDevServer } from 'vite'
-import { type Middleware } from './base'
+import { type Middleware } from './index'
 
 const base = process.env.BASE || '/'
 
-export const uiDevMiddleware = (vite: ViteDevServer): Middleware => async (req, res) => {
+export const uiDevMiddleware = (vite: ViteDevServer): Middleware => async (req, res, next) => {
   try {
     const url = req.originalUrl.replace(base, '')
+    if (url.startsWith('trpc/')) {
+      return next()
+    }
 
     const relativePath = url || 'View'
     const params = {}

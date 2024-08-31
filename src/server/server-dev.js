@@ -19,9 +19,12 @@ const uiVite = await createServer({
 })
 
 uiVite.middlewares.use(async (req, res) => {
-  const { app } = await serverVite.ssrLoadModule('/app')
   const { uiDevMiddleware } = await serverVite.ssrLoadModule('/middleware/ui-dev.middleware')
-  app.use(uiDevMiddleware(uiVite))
+  const { createApp } = await serverVite.ssrLoadModule('/app')
+
+  const middleware = uiDevMiddleware(uiVite)
+  const app = createApp(middleware)
+
   app(req, res)
 })
 
